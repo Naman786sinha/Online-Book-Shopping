@@ -1,0 +1,123 @@
+TABLE CREATION IN ORACLE11G USING SQL
+
+create table customer(
+custid number(3),
+paswd number(4) NOT NULL,
+name varchar(25) NOT NULL,
+phone number(10) NOT NULL,
+email varchar(30) NOT NULL,
+address varchar(40) NOT NULL,
+constraint PK_customer primary key(custid));
+
+
+create table orders(
+custid number(3), 
+ordno number(3),
+orddate date NOT NULL,
+deldate date NOT NULL,
+constraint PK_orders primary key(ordno),
+constraint FK_custid foreign key(custid) references customer(custid) ON DELETE CASCADE );
+
+
+create table genres(
+genreid number(3),
+genre varchar(20) NOT NULL,
+constraint PK_genres primary key(genreid));
+
+
+create table books(
+bookid number(3),
+authname varchar(25) NOT NULL,
+pubname varchar(30) NOT NULL,
+title varchar(40) NOT NULL,
+genreid number(3),
+price number(10,2) NOT NULL,
+stkquant number(3) NOT NULL,
+constraint PK_books primary key(bookid),                                                                                               
+constraint FK_genreid foreign key(genreid) references genres(genreid) ON DELETE CASCADE );
+
+create table order_details(
+ordno number(3),
+bookid number(3),
+price number(10,2) NOT NULL,
+quant number(2) NOT NULL,
+amount number(10,2) NOT NULL,
+constraint PK_orddetails primary key(ordno,bookid),
+constraint FK_ordno foreign key(ordno) references orders(ordno) ON DELETE CASCADE,
+constraint FK_bookid foreign key(bookid) references books(bookid) ON DELETE CASCADE );
+
+create table payments(
+ordno number(3),
+custid number(3),
+totamnt number(10,2) NOT NULL,
+paymode varchar(20) NOT NULL,
+status varchar(20) NOT NULL,  
+constraint PK_payment primary key(ordno),
+constraint FK_pay1 foreign key(ordno) references orders(ordno) ON DELETE CASCADE,
+constraint FK_pay2 foreign key(custid) references customer(custid) ON DELETE CASCADE );
+
+STORED PROCEDURES IN ONLINE BOOK SHOPPING
+
+
+create or replace procedure cal_sum(x in number) as
+ads number;
+begin
+select sum(amount) into ads
+from order_details
+where ordno=x;
+update payments
+set totamnt=ads
+where ordno=x;
+end;
+/
+
+
+create or replace procedure stock(x in number,y in number,b in number) as
+z number;
+begin
+z:=x-y;
+update books
+set stkquant=z
+where bookid=b;
+end;
+/
+
+
+
+create or replace procedure svpt as
+begin
+savepoint S;
+end;
+/
+
+create or replace procedure rlbk as
+begin
+rollback to S;
+end;
+/
+
+
+begin
+sm;
+end;
+/
+
+select bookid,price,quant,amount
+from order_details
+where ordno=76;
+
+TRIGGER IN ONLINE BOOK SHOPPING
+
+CREATE OR REPLACE trigger red
+AFTER INSERT ON books
+FOR EACH ROW
+DECLARE
+x NUMBER(3);
+bookid NUMBER(3);
+BEGIN
+SELECT bookid INTO x FROM BOOKS LIMIT 0,1;
+IF x=:NEW.bookid THEN
+RAISE_APPLICATION_ERROR(-20215,'Entered Bookid is already present');
+END IF;
+END;
+/   
